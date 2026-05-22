@@ -23,6 +23,5 @@ func summarizePrices(_ products: [(String, Double)]) -> (min: Double, max: Doubl
 print(summarizePrices(products_and_prices))
 
 // filter function with closure
-
 let affordableProducts = products_and_prices.filter { $0.1 < 10.00 }
 print(affordableProducts)
