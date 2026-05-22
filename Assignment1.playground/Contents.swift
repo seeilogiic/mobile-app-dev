@@ -19,7 +19,6 @@ func summarizePrices(_ products: [(String, Double)]) -> (min: Double, max: Doubl
     }
     return (min: minVal, max: maxVal)
 }
-
 print(summarizePrices(products_and_prices))
 
 // filter function with closure
