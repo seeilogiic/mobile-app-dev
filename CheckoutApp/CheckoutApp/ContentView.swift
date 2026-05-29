@@ -108,31 +108,39 @@ struct ActionItem : View {
     var selectedFruit: String?
     @Binding var fruitCounters: [String: Int]
     
+    // .alert modifier for user input validation feedback
+    @State private var showAlert: Bool = false
+    
     private var currentCount: Int {
         guard let selectedFruit = selectedFruit else { return 0 }
         return fruitCounters[selectedFruit] ?? 0
     }
     
     var body : some View {
-        HStack {
-            Image(systemName: "minus")
-                .imageScale(.large)
-                .padding(.trailing, 10)
-                .onTapGesture {
-                    if let selectedFruit = selectedFruit, currentCount > 0 {
-                        fruitCounters[selectedFruit] = currentCount - 1
+        // Stepper replaces manual +/- buttons for quantity control
+        ZStack(alignment: .trailing) {
+            Stepper("Quantity: \(currentCount)", value: Binding(
+                get: { currentCount },
+                set: { newValue in
+                    if let fruit = selectedFruit {
+                        fruitCounters[fruit] = newValue
                     }
                 }
+            ), in: 0...99)
             
-            Image(systemName: "plus")
-                .imageScale(.large)
-                .onTapGesture {
-                    if let selectedFruit = selectedFruit {
-                        fruitCounters[selectedFruit] = currentCount + 1
+            if selectedFruit == nil {
+                Color.clear
+                    .frame(width: 94, height: 44)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        showAlert = true
                     }
-                }
-            Spacer()
-            Text("\(currentCount)")
+            }
+        }
+        .alert("No Fruit Selected", isPresented: $showAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Please select a fruit from the list before adjusting the quantity.")
         }
     }
 }
