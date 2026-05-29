@@ -1,4 +1,3 @@
-//
 //  ContentView.swift
 //  CheckoutApp
 //
@@ -8,20 +7,63 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var selectedFruit: String? = nil
+    @State private var fruitCounters: [String: Int] = [
+        "Apple": 0,
+        "Banana": 0,
+        "Strawberry": 0,
+        "Pear": 0
+    ]
+    
+    @State private var flag: Bool = false
+    @State private var tip: Int = 10
+    
+    private let fruitPrices: [String: Int] = [
+        "Apple": 2,
+        "Banana": 1,
+        "Strawberry": 5,
+        "Pear": 100
+    ]
+    
+    private var totalPrice: Double {
+        let subtotal = fruitCounters.reduce(0) { sum, pair in
+            let fruitName = pair.key
+            let quantity = pair.value
+            let price = fruitPrices[fruitName] ?? 0
+            return sum + (price * quantity)
+        }
+        
+        if flag {
+            let multiplier = 1.0 + (Double(tip) / 100.0)
+            return Double(subtotal) * multiplier
+        } else {
+            return Double(subtotal)
+        }
+    }
+    
     var body: some View {
         NavigationStack {
             List {
                 Group {
-                    ListItem(iconName: "apple", itemName: "Apple", price: 2)
-                    ListItem(iconName: "banana", itemName: "Banana", price: 1)
-                    ListItem(iconName: "strawberry", itemName: "Strawberry", price: 5)
-                    ListItem(iconName: "pear", itemName: "Pear", price: 100)
+                    ListItem(iconName: "apple", itemName: "Apple", price: 2, selectedFruit: $selectedFruit)
+                    ListItem(iconName: "banana", itemName: "Banana", price: 1, selectedFruit: $selectedFruit)
+                    ListItem(iconName: "strawberry", itemName: "Strawberry", price: 5, selectedFruit: $selectedFruit)
+                    ListItem(iconName: "pear", itemName: "Pear", price: 100, selectedFruit: $selectedFruit)
                 }
                 Section {
-                    ActionItem()
+                    ActionItem(selectedFruit: selectedFruit, fruitCounters: $fruitCounters)
                 }
                 Section {
-                    PickerItem()
+                    PickerItem(flag: $flag, tip: $tip)
+                }
+                Section {
+                    HStack {
+                        Text("Total Price")
+                            .bold()
+                        Spacer()
+                        Text(String(format: "$%.2f", totalPrice))
+                            .bold()
+                    }
                 }
                 Section {
                     ConfirmItem()
@@ -40,6 +82,8 @@ struct ListItem: View {
     var itemName: String
     var price: Int
     
+    @Binding var selectedFruit: String?
+    
     var body: some View {
         HStack {
             Image(iconName)
@@ -49,31 +93,54 @@ struct ListItem: View {
             Text("$\(price)")
         }
         .padding()
+        .background(selectedFruit == itemName ? Color.gray.opacity(0.2) : Color.clear)
+        .cornerRadius(8)
         .foregroundStyle(Color("theme"))
+        .contentShape(Rectangle())
+        .onTapGesture {
+            selectedFruit = itemName
+        }
     }
 }
 
 struct ActionItem : View {
     
-    @State var counter : Int = 0
+    var selectedFruit: String?
+    @Binding var fruitCounters: [String: Int]
+    
+    private var currentCount: Int {
+        guard let selectedFruit = selectedFruit else { return 0 }
+        return fruitCounters[selectedFruit] ?? 0
+    }
     
     var body : some View {
         HStack {
+            Image(systemName: "minus")
+                .imageScale(.large)
+                .padding(.trailing, 10)
+                .onTapGesture {
+                    if let selectedFruit = selectedFruit, currentCount > 0 {
+                        fruitCounters[selectedFruit] = currentCount - 1
+                    }
+                }
+            
             Image(systemName: "plus")
                 .imageScale(.large)
-                .onTapGesture {apGesture in
-                    counter += 1
+                .onTapGesture {
+                    if let selectedFruit = selectedFruit {
+                        fruitCounters[selectedFruit] = currentCount + 1
+                    }
                 }
             Spacer()
-            Text("\(counter)")
+            Text("\(currentCount)")
         }
     }
 }
 
 struct PickerItem : View {
     
-    @State var flag : Bool = false
-    @State var tip: Int = 0
+    @Binding var flag : Bool
+    @Binding var tip: Int
     var tipOptions : [Int] = [10, 15, 20, 25]
     
     var body : some View {
@@ -82,11 +149,11 @@ struct PickerItem : View {
             
             if flag {
                 Picker("Tip Percentage", selection: $tip) {
-                    ForEach(tipOptions, id: \.self) { option in Text("\(option)")
+                    ForEach(tipOptions, id: \.self) { option in Text("\(option)%")
                     }
-                    .pickerStyle(SegmentedPickerStyle())
-                    .padding()
                 }
+                .pickerStyle(SegmentedPickerStyle())
+                .padding(.top, 8)
             }
         }
     }
@@ -115,6 +182,7 @@ struct secondView: View {
         }
     }
 }
+
 #Preview {
     ContentView()
         .preferredColorScheme(.light)
