@@ -22,7 +22,7 @@ struct HobbyRowView: View {
             Spacer()
             
             Button(action: {
-                print("Tapped for \(hobby.hobbyName)")
+                favorites.toggleFavoriteHobby(hobby: hobby)
             }){
                 Image(systemName: hobby.isFavorite ? "heart.fill" : "heart")
                     .foregroundStyle(hobby.isFavorite ? .red : .white)

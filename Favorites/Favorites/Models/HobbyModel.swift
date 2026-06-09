@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct HobbyModel {
+struct HobbyModel : Identifiable{
     let id: Int
     let hobbyName: String
     let hobbyIcon: String

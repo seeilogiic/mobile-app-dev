@@ -29,7 +29,7 @@ struct CityCardView: View {
                 Spacer()
                 
                 Button(action: {
-                    print("Tapped for \(city.cityName)")
+                    favorites.toggleFavoriteCity(city: city)
                 }) {
                     Image(systemName: city.isFavorite ? "heart.fill" : "heart")
                         .padding(6)

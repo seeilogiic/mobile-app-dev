@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct CityModel {
+struct CityModel: Identifiable {
     let id: Int
     let cityName: String
     let cityImage: String
