@@ -13,7 +13,7 @@ protocol Favoritable : Identifiable {
     var searchableText : String { get }
 }
 
-struct CityModel : Favoritable {
+struct CityModel : Favoritable, Hashable {
     let id: Int
     let cityName: String
     let cityImage: String
@@ -24,7 +24,7 @@ struct CityModel : Favoritable {
     }
 }
 
-struct HobbyModel : Favoritable {
+struct HobbyModel : Favoritable, Hashable {
     let id: Int
     let hobbyName: String
     let hobbyIcon: String
@@ -35,7 +35,7 @@ struct HobbyModel : Favoritable {
     }
 }
 
-struct BookModel : Favoritable {
+struct BookModel : Favoritable, Hashable {
     let id: Int
     let bookTitle: String
     let bookAuthor: String

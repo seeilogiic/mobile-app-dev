@@ -45,6 +45,8 @@ struct HomeView: View {
             CitiesView(searchText: $searchText)
         } else if selectedCategory == .hobbies {
             HobbiesView(searchText: $searchText)
+        } else if selectedCategory == .books {
+            BooksView(searchText: $searchText)
         }
     }
     
