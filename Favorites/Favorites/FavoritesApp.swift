@@ -11,7 +11,6 @@ import SwiftUI
 struct FavoritesApp: App {
     
     @StateObject private var favoritesViewModel = FavoritesViewModel()
-        
     
     var body: some Scene {
         WindowGroup {

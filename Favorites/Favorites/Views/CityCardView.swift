@@ -16,16 +16,17 @@ struct CityCardView: View {
         ZStack(alignment: .bottom) {
             Image(city.cityImage)
                 .resizable()
-                .scaledToFit()
+                .scaledToFill()
                 .frame(height: 140)
-                    .clipped()
-                       
+                .clipped()
+            
             HStack {
                 Text(city.cityName)
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.white)
                     .padding(6)
                     .background(Color.black.opacity(0.35))
+                    
                 Spacer()
                 
                 Button(action: {
@@ -35,6 +36,7 @@ struct CityCardView: View {
                         .padding(6)
                         .foregroundStyle(city.isFavorite ? .red : .white)
                         .background(Color.black.opacity(0.35))
+                        
                 }
             }
             .padding(.horizontal, 30)

@@ -23,9 +23,9 @@ struct HobbyRowView: View {
             
             Button(action: {
                 favorites.toggleFavoriteHobby(hobby: hobby)
-            }){
+            }) {
                 Image(systemName: hobby.isFavorite ? "heart.fill" : "heart")
-                    .foregroundStyle(hobby.isFavorite ? .red : .white)
+                    .foregroundStyle(hobby.isFavorite ? .red : .gray)
             }
         }
         .padding(.vertical, 4)

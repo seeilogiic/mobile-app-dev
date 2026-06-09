@@ -11,7 +11,9 @@ enum ContentCategory : String, CaseIterable {
     case cities = "Cities"
     case hobbies = "Hobbies"
     case books = "Books"
+    
 }
+
 struct HomeView: View {
     
     @State private var selectedCategory: ContentCategory = .cities
@@ -45,6 +47,7 @@ struct HomeView: View {
             HobbiesView(searchText: $searchText)
         }
     }
+    
 }
 
 #Preview {

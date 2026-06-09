@@ -9,7 +9,7 @@ import SwiftUI
 
 struct CitiesView: View {
     
-    @EnvironmentObject var favorites : FavoritesViewModel
+    @EnvironmentObject var favorites: FavoritesViewModel
     @Binding var searchText: String
     
     var body: some View {
