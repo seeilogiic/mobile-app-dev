@@ -10,6 +10,7 @@ import Foundation
 class NationalParksViewModel: ObservableObject {
     @Published var introPages : [IntroPage] = []
     @Published var nationalParks : [ParkModel] = []
+    @Published var isLoading = false
     
     func loadIntroPages() {
         guard introPages.isEmpty else { return }
@@ -30,7 +31,9 @@ class NationalParksViewModel: ObservableObject {
     }
     
     func fetchNationalParks(stateCode : String) {
-        let baseUrl = "https://develoepr.nps.gov/api/v1/parks"
+        self.isLoading = true
+        self.nationalParks.removeAll()
+        let baseUrl = "https://developer.nps.gov/api/v1/parks"
         let apiKey = "MQuVg9TchhiC72NDxGabqb7TqU91iLBFWvmcG6cy"
         
         guard var components = URLComponents(string: baseUrl) else { return }
@@ -62,6 +65,7 @@ class NationalParksViewModel: ObservableObject {
                 
                 DispatchQueue.main.async {
                     self.nationalParks = filtered
+                    self.isLoading = false
                 }
             } catch {
                 print("Decoding error: \(error)")
