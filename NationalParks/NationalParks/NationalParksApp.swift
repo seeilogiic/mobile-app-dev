@@ -9,9 +9,21 @@ import SwiftUI
 
 @main
 struct NationalParksApp: App {
+    
+    @StateObject private var parks = NationalParksViewModel()
+    @AppStorage("hasSeenIntro") var hasSeenIntro: Bool = false
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            if hasSeenIntro {
+                ContentView()
+                    .environmentObject(parks)
+            } else {
+                IntroView() {
+                    hasSeenIntro = true
+                }
+                    .environmentObject(parks)
+            }
         }
     }
 }
