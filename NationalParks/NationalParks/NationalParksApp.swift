@@ -10,7 +10,7 @@ import SwiftUI
 @main
 struct NationalParksApp: App {
     
-    @StateObject private var parks = NationalParksViewModel()
+    @StateObject var parks = NationalParksViewModel()
     @AppStorage("hasSeenIntro") var hasSeenIntro: Bool = false
     
     var body: some Scene {
@@ -19,11 +19,12 @@ struct NationalParksApp: App {
                 ContentView()
                     .environmentObject(parks)
             } else {
-                IntroView() {
+                IntroView {
                     hasSeenIntro = true
                 }
                     .environmentObject(parks)
             }
+            
         }
     }
 }

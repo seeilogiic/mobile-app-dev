@@ -21,12 +21,13 @@ struct IntroView: View {
                         
                         Image(page.imageName)
                             .resizable()
-                            .multilineTextAlignment(.center)
+                            .scaledToFit()
                             .frame(maxHeight: 500)
                         
                         Text(page.caption)
                             .font(.title3)
                             .multilineTextAlignment(.center)
+                            .padding(.horizontal)
                         
                         Spacer()
                     }
@@ -35,6 +36,7 @@ struct IntroView: View {
             .tabViewStyle(.page)
             .indexViewStyle(.page(backgroundDisplayMode: .always))
             .padding()
+            
             
             Button(action: {
                 onFinish()
@@ -48,6 +50,7 @@ struct IntroView: View {
             .padding(.horizontal)
             .padding(.bottom, 40)
         }
+        .ignoresSafeArea(.all)
         .onAppear {
             parks.loadIntroPages()
         }
