@@ -9,6 +9,7 @@ import SwiftUI
 
 struct EntryCardView: View {
     let entry: JournalEntry
+    let onEdit: () -> Void
     let onDelete: () -> Void
     
     private var formattedDate: String {
@@ -20,11 +21,26 @@ struct EntryCardView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             
+            if let title = entry.title, !title.isEmpty {
+                Text(title)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+            }
+            
             Text(entry.text)
                 .font(.body)
             
             HStack {
                 Spacer()
+                
+                Button(action: onEdit) {
+                    Label("Edit", systemImage: "pencil")
+                }
+                .font(.subheadline)
+                .foregroundStyle(.tint)
+                
+                Spacer()
+                    .frame(width: 16)
                 
                 Button(role: .destructive, action: onDelete) {
                     Label("Delete", systemImage: "trash")

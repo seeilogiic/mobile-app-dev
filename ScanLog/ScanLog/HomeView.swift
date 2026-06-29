@@ -11,6 +11,7 @@ import PhotosUI
 struct HomeView: View {
     @StateObject private var viewModel = JournalViewModel()
     @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var editingEntry: JournalEntry?
     var body: some View {
         NavigationStack {
             Group {
@@ -53,6 +54,11 @@ struct HomeView: View {
                     selectedPhotoItem = nil
                 }
             }
+            .sheet(item: $editingEntry) { entry in
+                EditEntryView(entry: entry) { updatedTitle, updatedText in
+                    viewModel.updateEntry(entry, title: updatedTitle, with: updatedText)
+                }
+            }
         }
     }
     
@@ -69,22 +75,31 @@ struct HomeView: View {
     }
     
     private var editorSection: some View {
-        TextEditor(text: $viewModel.draftText)
-            .frame(minHeight: 170)
-            .padding(8)
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(Color(.separator), lineWidth: 1)
-            )
-            .overlay(alignment: .topLeading) {
-                if viewModel.draftText.isEmpty {
-                    Text("Type here, or select a note image...")
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 16)
-                        .allowsHitTesting(false)
+        VStack(spacing: 12) {
+            TextField("Title (Optional)", text: $viewModel.draftTitle)
+                .padding(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color(.separator), lineWidth: 1)
+                )
+            
+            TextEditor(text: $viewModel.draftText)
+                .frame(minHeight: 170)
+                .padding(8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Color(.separator), lineWidth: 1)
+                )
+                .overlay(alignment: .topLeading) {
+                    if viewModel.draftText.isEmpty {
+                        Text("Type here, or select a note image...")
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 16)
+                            .allowsHitTesting(false)
+                    }
                 }
-            }
+        }
     }
     
     private var actionSection: some View {
@@ -132,6 +147,8 @@ struct HomeView: View {
             } else {
                 ForEach(viewModel.entries) { entry in
                     EntryCardView(entry: entry) {
+                        editingEntry = entry
+                    } onDelete: {
                         viewModel.deleteEntry(entry)
                     }
                 }
@@ -156,4 +173,66 @@ struct HomeView: View {
 
 #Preview {
     HomeView()
+}
+
+struct EditEntryView: View {
+    let entry: JournalEntry
+    let onSave: (String?, String) -> Void
+    
+    @Environment(\.dismiss) private var dismiss
+    @State private var title: String
+    @State private var text: String
+    
+    init(entry: JournalEntry, onSave: @escaping (String?, String) -> Void) {
+        self.entry = entry
+        self.onSave = onSave
+        _title = State(initialValue: entry.title ?? "")
+        _text = State(initialValue: entry.text)
+    }
+    
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Edit the content of your journal entry below.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal)
+                
+                TextField("Title (Optional)", text: $title)
+                    .padding(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color(.separator), lineWidth: 1)
+                    )
+                    .padding(.horizontal)
+                
+                TextEditor(text: $text)
+                    .padding(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color(.separator), lineWidth: 1)
+                    )
+                    .padding(.horizontal)
+                
+                Spacer()
+            }
+            .padding(.top)
+            .navigationTitle("Edit Entry")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        onSave(title, text)
+                        dismiss()
+                    }
+                    .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+        }
+    }
 }
