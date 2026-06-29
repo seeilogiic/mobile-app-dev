@@ -7,11 +7,48 @@
 
 import SwiftUI
 import PhotosUI
+import UIKit
 
 struct HomeView: View {
     @StateObject private var viewModel = JournalViewModel()
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var editingEntry: JournalEntry?
+    @State private var searchText = ""
+    
+    private var filteredEntries: [JournalEntry] {
+        if searchText.isEmpty {
+            return viewModel.entries
+        } else {
+            return viewModel.entries.filter { entry in
+                (entry.title?.localizedCaseInsensitiveContains(searchText) == true) ||
+                entry.text.localizedCaseInsensitiveContains(searchText)
+            }
+        }
+    }
+    
+    private func groupEntries(_ entries: [JournalEntry]) -> [(group: String, entries: [JournalEntry])] {
+        let calendar = Calendar.current
+        var today: [JournalEntry] = []
+        var yesterday: [JournalEntry] = []
+        var earlier: [JournalEntry] = []
+        
+        for entry in entries {
+            if calendar.isDateInToday(entry.createdAt) {
+                today.append(entry)
+            } else if calendar.isDateInYesterday(entry.createdAt) {
+                yesterday.append(entry)
+            } else {
+                earlier.append(entry)
+            }
+        }
+        
+        var result: [(group: String, entries: [JournalEntry])] = []
+        if !today.isEmpty { result.append(("Today", today)) }
+        if !yesterday.isEmpty { result.append(("Yesterday", yesterday)) }
+        if !earlier.isEmpty { result.append(("Earlier", earlier)) }
+        return result
+    }
+
     var body: some View {
         NavigationStack {
             Group {
@@ -58,6 +95,10 @@ struct HomeView: View {
                 EditEntryView(entry: entry) { updatedTitle, updatedText in
                     viewModel.updateEntry(entry, title: updatedTitle, with: updatedText)
                 }
+            }
+            .searchable(text: $searchText, prompt: "Search title or text...")
+            .navigationDestination(for: JournalEntry.self) { entry in
+                EntryDetailView(entryId: entry.id, viewModel: viewModel)
             }
         }
     }
@@ -136,8 +177,9 @@ struct HomeView: View {
             Text("Journal Entries")
                 .font(.headline)
             
-            if viewModel.entries.isEmpty {
-                Text("No entries yet!")
+            let filtered = filteredEntries
+            if filtered.isEmpty {
+                Text(searchText.isEmpty ? "No entries yet!" : "No matching entries found!")
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(18)
                     .background(
@@ -145,11 +187,26 @@ struct HomeView: View {
                             .fill(Color(.secondarySystemBackground))
                     )
             } else {
-                ForEach(viewModel.entries) { entry in
-                    EntryCardView(entry: entry) {
-                        editingEntry = entry
-                    } onDelete: {
-                        viewModel.deleteEntry(entry)
+                let grouped = groupEntries(filtered)
+                ForEach(grouped, id: \.group) { section in
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(section.group)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 8)
+                        
+                        ForEach(section.entries) { entry in
+                            NavigationLink(value: entry) {
+                                EntryCardView(entry: entry, onEdit: {
+                                    editingEntry = entry
+                                }, onDelete: {
+                                    viewModel.deleteEntry(entry)
+                                })
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                 }
             }
@@ -231,6 +288,88 @@ struct EditEntryView: View {
                         dismiss()
                     }
                     .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+        }
+    }
+}
+
+struct EntryDetailView: View {
+    let entryId: UUID
+    @ObservedObject var viewModel: JournalViewModel
+    @State private var isEditing = false
+    
+    @Environment(\.dismiss) private var dismiss
+    
+    private var currentEntry: JournalEntry? {
+        viewModel.entries.first(where: { $0.id == entryId })
+    }
+    
+    var body: some View {
+        Group {
+            if let entry = currentEntry {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(entry.createdAt.formatted(date: .long, time: .shortened))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            
+                            if let title = entry.title, !title.isEmpty {
+                                Text(title)
+                                    .font(.title2)
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(.primary)
+                            }
+                        }
+                        
+                        Divider()
+                        
+                        Text(entry.text)
+                            .font(.body)
+                            .lineSpacing(6)
+                            .textSelection(.enabled)
+                        
+                        Spacer()
+                    }
+                    .padding(20)
+                }
+                .navigationTitle("Journal Entry")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItemGroup(placement: .primaryAction) {
+                        ShareLink(item: entry.text, subject: Text(entry.title ?? "Journal Entry")) {
+                            Image(systemName: "square.and.arrow.up")
+                        }
+                        
+                        Button {
+                            UIPasteboard.general.string = entry.text
+                        } label: {
+                            Image(systemName: "doc.on.doc")
+                        }
+                        
+                        Button {
+                            isEditing = true
+                        } label: {
+                            Image(systemName: "pencil")
+                        }
+                    }
+                }
+                .sheet(isPresented: $isEditing) {
+                    EditEntryView(entry: entry) { updatedTitle, updatedText in
+                        viewModel.updateEntry(entry, title: updatedTitle, with: updatedText)
+                    }
+                }
+                .onChange(of: currentEntry) { _, newEntry in
+                    if newEntry == nil {
+                        dismiss()
+                    }
+                }
+            } else {
+                VStack {
+                    Text("Entry not found")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
                 }
             }
         }

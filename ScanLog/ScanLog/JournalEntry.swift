@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct JournalEntry: Identifiable, Codable {
+struct JournalEntry: Identifiable, Codable, Hashable {
     let id: UUID
     var title: String?
     let text: String

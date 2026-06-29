@@ -29,6 +29,8 @@ struct EntryCardView: View {
             
             Text(entry.text)
                 .font(.body)
+                .lineLimit(3)
+                .multilineTextAlignment(.leading)
             
             HStack {
                 Spacer()
@@ -38,6 +40,7 @@ struct EntryCardView: View {
                 }
                 .font(.subheadline)
                 .foregroundStyle(.tint)
+                .buttonStyle(.borderless)
                 
                 Spacer()
                     .frame(width: 16)
@@ -46,6 +49,7 @@ struct EntryCardView: View {
                     Label("Delete", systemImage: "trash")
                 }
                 .font(.subheadline)
+                .buttonStyle(.borderless)
             }
         }
         .padding(14)
