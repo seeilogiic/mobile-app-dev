@@ -60,6 +60,7 @@ struct HomeView: View {
                             headerSection
                             editorSection
                             actionSection
+                            statsSection
                             entriesSection
                         }
                         .padding(16)
@@ -211,6 +212,66 @@ struct HomeView: View {
                 }
             }
         }
+    }
+    
+    private var statsSection: some View {
+        HStack(spacing: 12) {
+            statCard(
+                title: "Total Logs",
+                value: "\(viewModel.entries.count)",
+                icon: "books.vertical.fill",
+                color: .blue
+            )
+            
+            let weeklyCount = viewModel.entries.filter { entry in
+                guard let days = Calendar.current.dateComponents([.day], from: entry.createdAt, to: Date()).day else { return false }
+                return days < 7
+            }.count
+            statCard(
+                title: "This Week",
+                value: "\(weeklyCount)",
+                icon: "calendar",
+                color: .green
+            )
+            
+            let totalWords = viewModel.entries.reduce(0) { sum, entry in
+                sum + entry.text.split(whereSeparator: { $0.isWhitespace }).count
+            }
+            statCard(
+                title: "Total Words",
+                value: "\(totalWords)",
+                icon: "doc.text.fill",
+                color: .orange
+            )
+        }
+        .padding(.vertical, 8)
+    }
+    
+    private func statCard(title: String, value: String, icon: String, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: icon)
+                    .foregroundStyle(color)
+                    .font(.subheadline)
+                Spacer()
+            }
+            
+            Text(value)
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundStyle(.primary)
+            
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fontWeight(.medium)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.secondarySystemBackground))
+        )
     }
     
     private func loadImageFromPhotoItem(_ item: PhotosPickerItem) async {
