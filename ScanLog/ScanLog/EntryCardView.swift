@@ -9,47 +9,52 @@ import SwiftUI
 
 struct EntryCardView: View {
     let entry: JournalEntry
-    let onEdit: () -> Void
-    let onDelete: () -> Void
     
     private var formattedDate: String {
         entry.createdAt.formatted(date: .abbreviated, time: .shortened)
     }
+    
+    private var wordCount: Int {
+        entry.text.split(whereSeparator: { $0.isWhitespace }).count
+    }
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(formattedDate)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: entry.title != nil ? "doc.text.fill" : "doc.viewfinder.fill")
+                .font(.title3)
+                .foregroundStyle(.blue)
+                .padding(10)
+                .background(Color.blue.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
             
-            if let title = entry.title, !title.isEmpty {
-                Text(title)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-            }
-            
-            Text(entry.text)
-                .font(.body)
-                .lineLimit(3)
-                .multilineTextAlignment(.leading)
-            
-            HStack {
-                Spacer()
-                
-                Button(action: onEdit) {
-                    Label("Edit", systemImage: "pencil")
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .top) {
+                    Text(entry.title ?? "Untitled Scan")
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                    
+                    Spacer()
+                    
+                    Text(formattedDate)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                 }
-                .font(.subheadline)
-                .foregroundStyle(.tint)
-                .buttonStyle(.borderless)
                 
-                Spacer()
-                    .frame(width: 16)
+                Text(entry.text)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+                    .multilineTextAlignment(.leading)
                 
-                Button(role: .destructive, action: onDelete) {
-                    Label("Delete", systemImage: "trash")
+                HStack {
+                    Label("\(wordCount) words", systemImage: "character.book.closed")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    
+                    Spacer()
                 }
-                .font(.subheadline)
-                .buttonStyle(.borderless)
+                .padding(.top, 4)
             }
         }
         .padding(14)

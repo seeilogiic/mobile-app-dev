@@ -11,9 +11,9 @@ import UIKit
 
 struct HomeView: View {
     @StateObject private var viewModel = JournalViewModel()
-    @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var editingEntry: JournalEntry?
     @State private var searchText = ""
+    @State private var isShowingComposer = false
     
     private var filteredEntries: [JournalEntry] {
         if searchText.isEmpty {
@@ -51,23 +51,38 @@ struct HomeView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if viewModel.isLoading {
-                    ProgressView()
-                } else {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 10) {
-                            headerSection
-                            editorSection
-                            actionSection
-                            statsSection
-                            entriesSection
+            ZStack(alignment: .bottom) {
+                Group {
+                    if viewModel.isLoading {
+                        ProgressView()
+                    } else {
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 14) {
+                                headerSection
+                                statsSection
+                                entriesSection
+                            }
+                            .padding(16)
+                            .padding(.bottom, 80) // Leave space for the floating scan button
                         }
-                        .padding(16)
+                    }
+                }
+                
+                // Floating Action Button for scanning
+                floatingActionButton
+            }
+            .navigationTitle("ScanLog")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        isShowingComposer = true
+                    } label: {
+                        Image(systemName: "doc.badge.plus")
+                            .fontWeight(.medium)
                     }
                 }
             }
-            .navigationTitle("ScanLog")
             .task {
                 viewModel.loadingEntries()
             }
@@ -75,7 +90,7 @@ struct HomeView: View {
                 "ScanLog",
                 isPresented: Binding(
                     get: { viewModel.errorMessage != nil },
-                    set: { if !$0 {viewModel.errorMessage = nil } }
+                    set: { if !$0 { viewModel.errorMessage = nil } }
                 )
             ) {
                 Button("OK", role: .cancel) {
@@ -84,13 +99,8 @@ struct HomeView: View {
             } message: {
                 Text(viewModel.errorMessage ?? "")
             }
-            .onChange(of: selectedPhotoItem) { _, newItem in
-                guard let newItem else { return }
-                
-                Task {
-                    await loadImageFromPhotoItem(newItem)
-                    selectedPhotoItem = nil
-                }
+            .sheet(isPresented: $isShowingComposer) {
+                ScanComposerView(viewModel: viewModel)
             }
             .sheet(item: $editingEntry) { entry in
                 EditEntryView(entry: entry) { updatedTitle, updatedText in
@@ -106,71 +116,15 @@ struct HomeView: View {
     
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Write or scan your thoughts.")
-                .font(.title)
+            Text("Your Documents")
+                .font(.largeTitle)
                 .fontWeight(.bold)
             
-            Text("Scan notes, edit the extracted text, and save it as a journal entry!")
-                .font(.body)
+            Text("Scan paper notes, capture text, and organize your scanned library.")
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
-    }
-    
-    private var editorSection: some View {
-        VStack(spacing: 12) {
-            TextField("Title (Optional)", text: $viewModel.draftTitle)
-                .padding(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color(.separator), lineWidth: 1)
-                )
-            
-            TextEditor(text: $viewModel.draftText)
-                .frame(minHeight: 170)
-                .padding(8)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color(.separator), lineWidth: 1)
-                )
-                .overlay(alignment: .topLeading) {
-                    if viewModel.draftText.isEmpty {
-                        Text("Type here, or select a note image...")
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 16)
-                            .allowsHitTesting(false)
-                    }
-                }
-        }
-    }
-    
-    private var actionSection: some View {
-        VStack(spacing: 12) {
-            if viewModel.isScanning {
-                ProgressView()
-                    .frame(maxWidth: .infinity)
-            }
-            
-            PhotosPicker(
-                selection: $selectedPhotoItem,
-                matching: .images,
-                photoLibrary: .shared()
-            ) {
-                Label("Gallery", systemImage: "photo.on.rectange")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-            .disabled(viewModel.isScanning)
-            
-            Button {
-                viewModel.addEntry()
-            } label : {
-                Label("Save Entry", systemImage: "square.and.arrow.down")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(viewModel.isScanning)
-        }
+        .padding(.vertical, 4)
     }
     
     private var entriesSection: some View {
@@ -199,12 +153,8 @@ struct HomeView: View {
                         
                         ForEach(section.entries) { entry in
                             NavigationLink(value: entry) {
-                                EntryCardView(entry: entry, onEdit: {
-                                    editingEntry = entry
-                                }, onDelete: {
-                                    viewModel.deleteEntry(entry)
-                                })
-                                .contentShape(Rectangle())
+                                EntryCardView(entry: entry)
+                                    .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                         }
@@ -272,6 +222,132 @@ struct HomeView: View {
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color(.secondarySystemBackground))
         )
+    }
+    
+    private var floatingActionButton: some View {
+        Button {
+            isShowingComposer = true
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "doc.viewfinder.fill")
+                    .font(.headline)
+                Text("Scan Document")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 14)
+            .background(Color.blue.gradient)
+            .clipShape(Capsule())
+            .shadow(color: Color.blue.opacity(0.3), radius: 8, y: 4)
+        }
+        .padding(.bottom, 16)
+    }
+}
+
+struct ScanComposerView: View {
+    @ObservedObject var viewModel: JournalViewModel
+    @State private var selectedPhotoItem: PhotosPickerItem? = nil
+    
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text("Select a document image from your gallery to extract and log its text, or draft a manual entry.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Document Title")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
+                        
+                        TextField("e.g. Physics Notes, Meeting Minutes...", text: $viewModel.draftTitle)
+                            .padding(12)
+                            .background(Color(.secondarySystemBackground))
+                            .cornerRadius(10)
+                        
+                        Text("Extracted / Drafted Text")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 4)
+                        
+                        TextEditor(text: $viewModel.draftText)
+                            .frame(minHeight: 180)
+                            .padding(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color(.separator), lineWidth: 1)
+                            )
+                            .overlay(alignment: .topLeading) {
+                                if viewModel.draftText.isEmpty {
+                                    Text("Extracted text will appear here. Tap scan below to start...")
+                                        .foregroundStyle(.secondary)
+                                        .padding(.horizontal, 14)
+                                        .padding(.vertical, 16)
+                                        .allowsHitTesting(false)
+                                }
+                            }
+                    }
+                    
+                    VStack(spacing: 12) {
+                        if viewModel.isScanning {
+                            VStack(spacing: 8) {
+                                ProgressView()
+                                Text("Analyzing document text...")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                        } else {
+                            PhotosPicker(
+                                selection: $selectedPhotoItem,
+                                matching: .images,
+                                photoLibrary: .shared()
+                            ) {
+                                Label("Scan from Gallery", systemImage: "doc.viewfinder.fill")
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(.blue)
+                        }
+                    }
+                }
+                .padding(20)
+            }
+            .navigationTitle("New Scan / Note")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        viewModel.draftTitle = ""
+                        viewModel.draftText = ""
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        viewModel.addEntry()
+                        dismiss()
+                    }
+                    .disabled(viewModel.draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isScanning)
+                }
+            }
+            .onChange(of: selectedPhotoItem) { _, newItem in
+                guard let newItem else { return }
+                Task {
+                    await loadImageFromPhotoItem(newItem)
+                    selectedPhotoItem = nil
+                }
+            }
+        }
     }
     
     private func loadImageFromPhotoItem(_ item: PhotosPickerItem) async {
@@ -414,6 +490,13 @@ struct EntryDetailView: View {
                         } label: {
                             Image(systemName: "pencil")
                         }
+                        
+                        Button(role: .destructive) {
+                            viewModel.deleteEntry(entry)
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                        .tint(.red)
                     }
                 }
                 .sheet(isPresented: $isEditing) {
